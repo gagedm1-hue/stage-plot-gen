@@ -1,0 +1,9 @@
+# StagePlot Pro — stageplots.app
+User-agent: *
+Allow: /
+
+# The two free template pages are meant to be found and linked. Shared plot
+# pages (/plot/<id>) are other people's documents, so they are not advertised.
+Disallow: /api/
+
+Sitemap: https://www.stageplots.app/sitemap.xml
