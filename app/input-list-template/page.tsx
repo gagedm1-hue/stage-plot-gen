@@ -30,6 +30,14 @@ const CSV = "/downloads/input-list-template.csv";
 const PREVIEW_ALT =
   "The blank input list template: a header block for band, venue, date and contact above a 24-row table with columns for channel number, instrument or source, mic or DI, stand, position on stage and notes.";
 
+// 1200×630 share card: the page title, the host, and page 1 of the real
+// template, rendered from public/images/input-list-template-preview.png by
+// scripts/build-og-cards.ts. Absolute URL — a relative og:image is ignored by
+// most crawlers — and built from APP_ORIGIN so it names the host that serves it.
+const OG_IMAGE_PATH = "/images/og-input-list-template.png";
+const OG_IMAGE_ALT =
+  "Share card: the title \u201cFree Input List Template for Bands (Channel List PDF)\u201d beside page 1 of the blank input list \u2014 a 24-row channel table with columns for channel, instrument or source, mic or DI, stand, position on stage and notes \u2014 on a dark indigo card reading stageplots.app.";
+
 export const metadata: Metadata = {
   title,
   description,
@@ -41,11 +49,21 @@ export const metadata: Metadata = {
     description,
     url: CANONICAL,
     locale: "en_US",
+    images: [
+      {
+        url: appUrl(OG_IMAGE_PATH),
+        type: "image/png",
+        width: 1200,
+        height: 630,
+        alt: OG_IMAGE_ALT,
+      },
+    ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title,
     description,
+    images: [{ url: appUrl(OG_IMAGE_PATH), alt: OG_IMAGE_ALT }],
   },
   robots: { index: true, follow: true },
 };

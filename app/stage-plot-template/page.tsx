@@ -31,6 +31,14 @@ const A4 = "/downloads/stage-plot-template-a4.pdf";
 const PREVIEW_ALT =
   "The blank stage plot template: a header of band and contact fields above a gridded stage diagram with stage right and stage left labelled and the audience marked along the bottom edge.";
 
+// 1200×630 share card: the page title, the host, and page 1 of the real
+// template, rendered from public/images/stage-plot-template-preview.png by
+// scripts/build-og-cards.ts. Absolute URL — a relative og:image is ignored by
+// most crawlers — and built from APP_ORIGIN so it names the host that serves it.
+const OG_IMAGE_PATH = "/images/og-stage-plot-template.png";
+const OG_IMAGE_ALT =
+  "Share card: the title \u201cFree Stage Plot Template for Bands (PDF, Printable)\u201d beside page 1 of the blank stage plot template \u2014 band and contact fields above a gridded stage diagram labelled stage right and stage left \u2014 on a dark indigo card reading stageplots.app.";
+
 export const metadata: Metadata = {
   title,
   description,
@@ -42,11 +50,21 @@ export const metadata: Metadata = {
     description,
     url: CANONICAL,
     locale: "en_US",
+    images: [
+      {
+        url: appUrl(OG_IMAGE_PATH),
+        type: "image/png",
+        width: 1200,
+        height: 630,
+        alt: OG_IMAGE_ALT,
+      },
+    ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title,
     description,
+    images: [{ url: appUrl(OG_IMAGE_PATH), alt: OG_IMAGE_ALT }],
   },
   robots: { index: true, follow: true },
 };
