@@ -1,43 +1,30 @@
 import Stripe from "stripe";
-
-export const runtime = "nodejs";
+import { NextResponse } from "next/server";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const APP_URL = process.env.APP_URL ?? "https://stageplots.app";
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
-    const priceId = process.env.STRIPE_PRICE_ID;
+    const { priceId, customerEmail } = await req.json();
 
     const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      line_items: priceId
-        ? [{ price: priceId, quantity: 1 }]
-        : [
-            {
-              quantity: 1,
-              price_data: {
-                currency: "usd",
-                unit_amount: 900,
-                product_data: {
-                  name: "StagePlot Pro Pass",
-                  description:
-                    "Unlimited cloud saves and unwatermarked PDF exports.",
-                },
-              },
-            },
-          ],
-      success_url: `${APP_URL}/?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${APP_URL}/`,
-      allow_promotion_codes: true,
+      payment_method_types: ["card"],
+      customer_email: customerEmail,
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      mode: "subscription",
+      success_url: ${APP_URL}/dashboard?success=true,
+      cancel_url: ${APP_URL}/pricing?canceled=true,
     });
 
-    return Response.json({ url: session.url });
-  } catch (err) {
-    console.error("checkout error", err);
-    return Response.json(
-      { error: "Could not start checkout." },
-      { status: 500 }
-    );
+    return NextResponse.json({ url: session.url });
+  } catch (error: any) {
+    console.error("Stripe error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
