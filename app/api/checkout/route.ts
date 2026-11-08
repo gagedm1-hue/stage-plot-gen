@@ -6,19 +6,22 @@ const APP_URL = process.env.APP_URL ?? "https://stageplots.app";
 
 export async function POST(req: Request) {
   try {
-    const { priceId, customerEmail } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const priceId = body.priceId || process.env.STRIPE_PRICE_ID;
 
     const session = await stripe.checkout.sessions.create({
-      customer_email: customerEmail,
+      payment_method_types: ["card"],
+      ...(body.customerEmail ? { customer_email: body.customerEmail } : {}),
       line_items: [
         {
-          price: priceId,
+          price: priceId ?? "price_1M...",
           quantity: 1,
         },
       ],
       mode: "subscription",
-      success_url: `${APP_URL}/dashboard?success=true`,
-      cancel_url: `${APP_URL}/pricing?canceled=true`,
+      success_url: `${APP_URL}/?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${APP_URL}/`,
+      allow_promotion_codes: true,
     });
 
     return NextResponse.json({ url: session.url });
