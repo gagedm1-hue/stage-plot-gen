@@ -1,6 +1,5 @@
 import Stripe from "stripe";
 
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function GET(req: Request) {
@@ -29,4 +28,4 @@ export async function GET(req: Request) {
       { status: 400 }
     );
   }
-}
+}s
