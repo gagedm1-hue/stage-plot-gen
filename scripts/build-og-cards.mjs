@@ -1,6 +1,6 @@
 // Builds the two 1200×630 social (og:image) cards for the template pages.
 //
-//   bun scripts/build-og-cards.ts      (from the repo root)
+//   node scripts/build-og-cards.mjs    (from the repo root)
 //
 // Writes public/images/og-stage-plot-template.png and
 //        public/images/og-input-list-template.png
@@ -13,6 +13,7 @@
 // squashed. No illustration, no generated imagery: a stranger sees the form.
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { spawn } from "node:child_process";
 
 const APP = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
 const WORK = "/tmp/og/work";
@@ -21,30 +22,22 @@ const CHROME = "/usr/local/bin/chromium";
 const W = 1200;
 const H = 630;
 
-type Card = {
-  slug: string;
-  title: string[];
-  sub: string;
-  /** Short label under the host — says what the picture is. */
-  docLabel: string;
-};
-
-const CARDS: Card[] = [
+const CARDS = [
   {
     slug: "stage-plot-template",
     title: ["Free Stage Plot", "Template for Bands", "(PDF, Printable)"],
-    sub: "Print and fill in by hand — US Letter and A4.",
+    sub: "Print and fill in by hand \u2014 US Letter and A4.",
     docLabel: "Page 1 of the blank template",
   },
   {
     slug: "input-list-template",
     title: ["Free Input List", "Template for Bands", "(Channel List PDF)"],
-    sub: "24 numbered channels — US Letter, A4, CSV.",
+    sub: "24 numbered channels \u2014 US Letter, A4, CSV.",
     docLabel: "Page 1 of the blank template",
   },
 ];
 
-const html = (card: Card, docDataUri: string, fontDataUri: string) => `<!doctype html>
+const html = (card, docDataUri, fontDataUri) => `<!doctype html>
 <html><head><meta charset="utf-8"><style>
   @font-face {
     font-family: "Inter";
@@ -56,18 +49,18 @@ const html = (card: Card, docDataUri: string, fontDataUri: string) => `<!doctype
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; background: #020617; }
   body {
-    width: ${String(W)}px; height: ${String(H)}px; overflow: hidden;
+    width: ${W}px; height: ${H}px; overflow: hidden;
     font-family: "Inter", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  .card { position: relative; width: ${String(W)}px; height: ${String(H)}px; overflow: hidden; }
+  .card { position: relative; width: ${W}px; height: ${H}px; overflow: hidden; }
   .glow {
     position: absolute; inset: 0;
     background:
       radial-gradient(620px 460px at 104% -8%, rgba(79,70,229,0.55), rgba(2,6,23,0) 68%),
       radial-gradient(520px 420px at -6% 108%, rgba(49,46,129,0.55), rgba(2,6,23,0) 70%);
   }
-  .rule { position: absolute; left: 0; top: 0; width: ${String(W)}px; height: 5px;
+  .rule { position: absolute; left: 0; top: 0; width: ${W}px; height: 5px;
           background: linear-gradient(90deg, #818cf8, #4338ca 55%, rgba(67,56,202,0)); }
   .text { position: absolute; left: 72px; top: 84px; width: 486px; }
   .pill {
@@ -114,17 +107,21 @@ const html = (card: Card, docDataUri: string, fontDataUri: string) => `<!doctype
   </div>
 </body></html>`;
 
-const run = async (cmd: string[]): Promise<void> => {
-  const proc = Bun.spawn(cmd, { stdout: "pipe", stderr: "pipe" });
-  const [out, err] = await Promise.all([
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
-  ]);
-  const code = await proc.exited;
-  if (code !== 0) throw new Error(`${cmd.join(" ")} failed (${String(code)})\n${err || out}`);
-};
+const run = (cmd) =>
+  new Promise((resolve, reject) => {
+    const proc = spawn(cmd[0], cmd.slice(1), { stdio: ["ignore", "pipe", "pipe"] });
+    let out = "";
+    let err = "";
+    proc.stdout.on("data", (d) => { out += String(d); });
+    proc.stderr.on("data", (d) => { err += String(d); });
+    proc.on("close", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`${cmd.join(" ")} failed (${String(code)})\n${err || out}`));
+    });
+    proc.on("error", reject);
+  });
 
-const pngSize = (buf: Uint8Array): [number, number] => {
+const pngSize = (buf) => {
   const v = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
   if (v.getUint32(0) !== 0x89504e47) throw new Error("not a PNG");
   return [v.getUint32(16), v.getUint32(20)];
@@ -151,17 +148,17 @@ for (const card of CARDS) {
     "--no-sandbox",
     "--hide-scrollbars",
     "--force-device-scale-factor=1",
-    `--window-size=${String(W)},${String(H)}`,
+    `--window-size=${W},${H}`,
     `--screenshot=${pngPath}`,
     `file://${htmlPath}`,
   ]);
 
-  const png = new Uint8Array(await readFile(pngPath));
+  const png = await readFile(pngPath);
   const [w, h] = pngSize(png);
   const ok = w === W && h === H && png.byteLength < 300 * 1024;
   console.log(
-    `${ok ? "OK  " : "FAIL"} og-${card.slug}.png  ${String(w)}x${String(h)} ` +
-      `bytes=${String(png.byteLength)} (${(png.byteLength / 1024).toFixed(1)} KB)`,
+    `${ok ? "OK  " : "FAIL"} og-${card.slug}.png  ${w}x${h} ` +
+      `bytes=${png.byteLength} (${(png.byteLength / 1024).toFixed(1)} KB)`,
   );
   if (!ok) throw new Error(`og card wrong for ${card.slug}`);
 }
