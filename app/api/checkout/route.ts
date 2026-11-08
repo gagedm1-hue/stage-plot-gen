@@ -9,7 +9,6 @@ export async function POST(req: Request) {
     const { priceId, customerEmail } = await req.json();
 
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
       customer_email: customerEmail,
       line_items: [
         {
