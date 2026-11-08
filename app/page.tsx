@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useProStatus } from './lib/useProStatus';
+import { trackCheckout, trackExport } from './lib/beacon';
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 
@@ -158,6 +159,9 @@ function StagePlotEditor() {
   };
 
   const handleStripeCheckout = async () => {
+    // Counted before the redirect to Stripe: this is the "started a checkout"
+    // half of the conversion ratio, and it must not depend on the fetch below.
+    trackCheckout();
     try {
       const response = await fetch('/api/checkout', { method: 'POST' });
       const data = await response.json();
@@ -171,6 +175,25 @@ function StagePlotEditor() {
       console.error('Checkout error:', error);
       alert('Network error connecting to Stripe.');
     }
+  };
+
+  // Export = the browser's print/PDF dialog closing after the click, not the
+  // click itself, so opening the dialog and walking away is not counted as an
+  // export. `afterprint` is the browser's own "the print job finished" signal;
+  // where it never fires (some embedded webviews) the timer is the fallback.
+  // Either way `sent` keeps it to exactly one event per export.
+  const handleExport = () => {
+    const watermarked = !(isPro || shareId);
+    let sent = false;
+    const fire = () => {
+      if (sent) return;
+      sent = true;
+      window.removeEventListener('afterprint', fire);
+      trackExport(watermarked);
+    };
+    window.addEventListener('afterprint', fire);
+    window.setTimeout(fire, 2000);
+    window.print();
   };
 
   const saveToCloud = async () => {
@@ -254,7 +277,7 @@ function StagePlotEditor() {
             </button>
 
             <button 
-              onClick={() => window.print()} 
+              onClick={handleExport}
               className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-semibold transition text-sm shadow-lg shadow-indigo-600/20 flex items-center gap-2"
             >
               <span>🖨️ Export PDF</span>
