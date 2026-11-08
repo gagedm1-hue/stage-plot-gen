@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useProStatus } from './lib/useProStatus';
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 
@@ -51,7 +52,7 @@ function StagePlotEditor() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [isPro, setIsPro] = useState(false);
+  const { isPro } = useProStatus();
   const [shareId, setShareId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -369,9 +370,11 @@ function StagePlotEditor() {
 
               <div className="flex justify-between items-center mt-4 text-xs text-slate-500 print:text-slate-600 pt-2 border-t border-slate-800 print:border-gray-300 select-none">
                 <span>Sound Engineer Stage Rider View</span>
-                <span className="font-mono text-indigo-400 print:text-indigo-600">
-                  {isPro || shareId ? 'StagePlot Pro' : 'StagePlot Pro (Watermarked)'}
-                </span>
+                {!(isPro || shareId) && (
+                  <span className="font-mono text-indigo-400 print:text-indigo-600">
+                    Made with StagePlot Pro — stageplots.app
+                  </span>
+                )}
               </div>
             </div>
 
