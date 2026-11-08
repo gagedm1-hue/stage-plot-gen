@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Static on purpose: the app has three indexable URLs and they do not change, so
+  a hand-written file is one less thing that can break the build. Every URL here
+  uses www.stageplots.app because that is the host that returns 200 — the bare
+  apex answers with a 308 to it, and a sitemap should never list a redirect.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://www.stageplots.app/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://www.stageplots.app/stage-plot-template</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.stageplots.app/input-list-template</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>
