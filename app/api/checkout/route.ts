@@ -18,8 +18,8 @@ export async function POST(req: Request) {
         },
       ],
       mode: "subscription",
-      success_url: ${APP_URL}/dashboard?success=true,
-      cancel_url: ${APP_URL}/pricing?canceled=true,
+      success_url: `${APP_URL}/dashboard?success=true`,
+      cancel_url: `${APP_URL}/pricing?canceled=true`,
     });
 
     return NextResponse.json({ url: session.url });
