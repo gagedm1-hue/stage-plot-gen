@@ -3,6 +3,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useParams } from 'next/navigation';
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { PowerMark, type PowerAt } from "../../lib/plot-marks";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -23,6 +24,10 @@ interface GearItem {
   y: number;
   channel: string;
   micPref: string;
+  /** The performer at this position. Optional: blank means no name shown. */
+  playerName?: string;
+  /** Power drop marked at this player. Absent means no mark. */
+  powerAt?: PowerAt;
 }
 
 function PlotViewerContent() {
@@ -135,7 +140,13 @@ function PlotViewerContent() {
                   className="absolute bg-slate-900 print:bg-slate-100 border border-slate-700 print:border-gray-400 p-3 rounded-xl shadow-2xl w-36 text-center select-none"
                   style={{ left: `${item.x}px`, top: `${item.y}px` }}
                 >
+                  {item.powerAt ? <PowerMark at={item.powerAt} /> : null}
                   <p className="font-bold text-sm text-white print:text-black truncate">{item.name}</p>
+                  {item.playerName?.trim() ? (
+                    <p className="text-[11px] font-semibold text-slate-200 print:text-black truncate">
+                      {item.playerName.trim()}
+                    </p>
+                  ) : null}
                   <div className="flex justify-center items-center gap-1.5 mt-1">
                     <span className="text-[10px] text-indigo-300 print:text-indigo-700 bg-indigo-950/80 print:bg-indigo-100 px-2 py-0.5 rounded font-mono">{item.channel}</span>
                     <span className="text-[10px] text-slate-400 print:text-slate-600 bg-slate-800 print:bg-gray-200 px-1.5 py-0.5 rounded truncate max-w-[60px]">{item.micPref}</span>
