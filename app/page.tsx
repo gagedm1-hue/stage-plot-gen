@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useProStatus } from './lib/useProStatus';
 import { trackCheckout, trackExport } from './lib/beacon';
+import { PowerMark, type PowerAt } from './lib/plot-marks';
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 
@@ -18,6 +19,7 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 const db = getFirestore(app);
 
+/** One piece of gear, i.e. one position on the plot. */
 interface GearItem {
   id: string;
   name: string;
@@ -25,6 +27,10 @@ interface GearItem {
   y: number;
   channel: string;
   micPref: string;
+  /** The performer at this position. Optional: blank means no name printed. */
+  playerName?: string;
+  /** Power drop marked at this player. Absent means no mark. */
+  powerAt?: PowerAt;
 }
 
 const GEAR_PRESETS = [
@@ -122,8 +128,8 @@ function StagePlotEditor() {
     let newX = (e.clientX - rect.left) - dragOffset.x;
     let newY = (e.clientY - rect.top) - dragOffset.y;
 
-    newX = Math.max(0, Math.min(newX, rect.width - 150));
-    newY = Math.max(0, Math.min(newY, rect.height - 80));
+    newX = Math.max(0, Math.min(newX, rect.width - 180));
+    newY = Math.max(0, Math.min(newY, rect.height - 140));
 
     updateItem(selectedId, { x: newX, y: newY });
   };
@@ -148,8 +154,8 @@ function StagePlotEditor() {
     let newX = (e.touches[0].clientX - rect.left) - dragOffset.x;
     let newY = (e.touches[0].clientY - rect.top) - dragOffset.y;
 
-    newX = Math.max(0, Math.min(newX, rect.width - 150));
-    newY = Math.max(0, Math.min(newY, rect.height - 80));
+    newX = Math.max(0, Math.min(newX, rect.width - 180));
+    newY = Math.max(0, Math.min(newY, rect.height - 140));
 
     updateItem(selectedId, { x: newX, y: newY });
   };
@@ -372,6 +378,7 @@ function StagePlotEditor() {
                     className={`absolute bg-slate-900 print:bg-gray-50 border ${selectedId === item.id ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-slate-700 print:border-gray-400'} p-3 rounded-xl shadow-2xl w-36 text-center cursor-move select-none transition-shadow touch-none`}
                     style={{ left: `${item.x}px`, top: `${item.y}px` }}
                   >
+                    {item.powerAt ? <PowerMark at={item.powerAt} /> : null}
                     <p className="font-bold text-sm text-white print:text-black truncate">{item.name}</p>
                     <div className="flex justify-center items-center gap-1.5 mt-1">
                       <input
@@ -387,6 +394,39 @@ function StagePlotEditor() {
                         className="w-16 text-[10px] text-center text-slate-400 print:text-slate-600 bg-slate-800 print:bg-gray-200 px-1 py-0.5 rounded truncate border border-slate-700 focus:outline-none"
                       />
                     </div>
+                    {/* Optional: who is standing here. Left blank, nothing prints. */}
+                    <input
+                      type="text"
+                      value={item.playerName ?? ''}
+                      onChange={(e) => updateItem(item.id, { playerName: e.target.value })}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onTouchStart={(e) => e.stopPropagation()}
+                      placeholder="Name (optional)"
+                      aria-label={`Player name at ${item.name}`}
+                      className="mt-1 w-full text-[11px] text-center text-slate-200 print:text-black bg-slate-950 print:bg-white px-1 py-0.5 rounded border border-slate-700 print:hidden placeholder:text-slate-500 placeholder:italic focus:outline-none"
+                    />
+                    {item.playerName?.trim() ? (
+                      <p className="hidden print:block mt-1 text-[11px] font-semibold text-black truncate">
+                        {item.playerName.trim()}
+                      </p>
+                    ) : null}
+                    {/* Power is marked at the player, not only at the stage edge. */}
+                    <select
+                      value={item.powerAt ?? ''}
+                      onChange={(e) =>
+                        updateItem(item.id, {
+                          powerAt: (e.target.value || undefined) as PowerAt | undefined,
+                        })
+                      }
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onTouchStart={(e) => e.stopPropagation()}
+                      aria-label={`Power mark at ${item.name}`}
+                      className="mt-1 w-full text-[9px] text-center bg-slate-950 text-slate-300 border border-slate-700 rounded px-0.5 py-0.5 print:hidden focus:outline-none"
+                    >
+                      <option value="">No power mark</option>
+                      <option value="front">Power at front</option>
+                      <option value="side">Power at side</option>
+                    </select>
                   </div>
                 ))}
               </div>
